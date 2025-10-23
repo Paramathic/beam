@@ -1,8 +1,10 @@
+<div align="center">
+<img src="./assets/beam.png" alt="BEAM" width="300">  
+</div>
+
 # BEAM: Blockwise Error Minimization for One-shot Compression of LLMs
 
 Large language models (LLMs) achieve strong performance but are notoriously expensive to deploy due to their scale. While compression techniques like pruning and quantization reduce memory and compute costs, they typically require costly retraining to recover lost accuracy. BEAM (Block-wise Error Minimization) addresses this bottleneck by splitting the model into transformer blocks and optimizing each block independently to minimize compression-induced errors. This design enables efficient fine-tuning using only a single GPU and a small amount of data, without sacrificing performance. BEAM is fully compatible with existing compression methods like Wanda, SparseGPT, GPTQ, and SLiM, and improves accuracy by up to 4.3% over compressed baselines. Despite its benefits, BEAM's runtime remains comparable to standard compression pipelines—taking under 4 hours to tune a sparse and quantized 12B model. Check out our [blog post](https://www.cs.toronto.edu/~mmozaffari/compression-trinity/beam/index.html) for more details.
-
-<img src="./assets/beam.png" alt="BEAM" width="500">
 
 ## Setup
 
@@ -61,6 +63,30 @@ beam_recovery(
 
 
 ## Experimental Results
+
+We evaluate BEAM on pruning methods (Wanda, SparseGPT, SLiM) and quantization methods (GPTQ, SLiM-Quant, AbsMax). GPTQ and AbsMax use group size 32, and SLiM-Quant quantizes each weight tensor with a single parameter. We report zero-shot average accuracy over MMLU, PIQA, ARC-Easy, ARC-Challenge, WinoGrande, and OpenBookQA, with and without BEAM.
+
+For the complete per-task results and additional ablations, see our [W&B report](https://wandb.ai/mohammad-mozaffari-university-of-toronto/beam/reports/Untitled-Report--VmlldzoxMzIwMTIyMg?accessToken=y77jw7j1t5vqz0v0riwjkjp9ae5qkkol6lpbofchlafgxlcp3f10rt3ocqcqhqsz).
+
+### 2:4 Sparse + 4-bit Weight Quantization (↑ is better)
+
+| Method | Quantization | Structure | BEAM | LLaMA 3.2 1B | LLaMA 3.2 3B | Gemma 3 1B | Gemma 3 4B | Gemma 3 12B |
+|---|---|---|:---:|---:|---:|---:|---:|---:|
+| Dense | - | N/A | ❌ | 49.17 | 57.93 | 48.93 | 62.33 | 68.63 |
+| Wanda | Group AbsMax | 2:4 | ❌ | 33.10 | 38.86 | 35.74 | 40.17 | 42.03 |
+|  |  |  | ✅ | 35.28 | 40.63 | 36.31 | 44.52 | 44.52 |
+| SLiM | SLiM-Quant | 2:4 | ❌ | 36.94 | 45.73 | 39.44 | 47.55 | 53.41 |
+|  |  |  | ✅ | 39.95 | 49.02 | 40.79 | 48.25 | 53.24 |
+
+### 50% Unstructured Sparse + 4-bit Weight Quantization (↑ is better)
+
+| Method | Quantization | Structure | BEAM | LLaMA 3.2 1B | LLaMA 3.2 3B | Gemma 3 1B | Gemma 3 4B | Gemma 3 12B |
+|---|---|---|:---:|---:|---:|---:|---:|---:|
+| Dense | - | N/A | ❌ | 49.17 | 57.93 | 48.93 | 62.33 | 68.63 |
+| Wanda | Group AbsMax | Unstructured | ❌ | 38.17 | 48.13 | 41.29 | 50.16 | 52.89 |
+|  |  |  | ✅ | 40.13 | 48.59 | 42.38 | 52.57 | 53.48 |
+| SLiM | SLiM-Quant | Unstructured | ❌ | 42.41 | 52.07 | 44.70 | 54.39 | 61.77 |
+|  |  |  | ✅ | 44.28 | 53.52 | 45.14 | 55.63 | 62.06 |
 
 
 ## Function Documentation
